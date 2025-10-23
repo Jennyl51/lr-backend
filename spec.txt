@@ -1,0 +1,15 @@
+- Representing graph in the range [0-100, 0-100]
+- Minimum distance of 5, considering:
+    - Physical distance in miles
+    - Weighted edges
+        - Frequency of crimes, severity, how recent crime was
+        - Crime (string), severity (integer to represent how heinous a crime is), timestamps (date)
+- Dijktra's:
+    - Gives you the cheapest path from a source vertex to every other vertex in the graph
+        - cheapest as in smallest total weight
+    - Uses a priority queue (heap)
+    - Needs non-negative edge weights
+- A*
+    - Gives you the cheapest path from a source vertex to a particular target
+    - Will run faster, using a heuristic to generally push the path in the right direction
+        - e.g. if you start from the center and want to go to the top-right, the heuristics will push you top-right
