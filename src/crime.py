@@ -7,12 +7,27 @@ from datetime import datetime, timedelta, date, time
 from time import sleep
 
 # dummy_data = read csv
+# CSV we're assuming (source, destination, weight)
 
 class Graph:
     # IMPLEMENTED BY ARY AND ETHAN
     # assume all methods implemented
-    def __init__(self) -> None:
-        self.adj = {}
+    def __init__(self, csv_path) -> None:
+        self.adj_list = defaultdict(list)
+
+        with open(csv_path, 'r') as f:
+            next(f)  # skip header if any
+            for line in f:
+                parts = line.strip().split(',')
+                if len(parts) < 3:
+                    continue
+
+                node1, node2, weight = int(parts[0]), int(parts[1]), float(parts[2])
+
+                # Undirected edge
+                self.adj_list[node1].append((node2, weight))
+                self.adj_list[node2].append((node1, weight))
+
 
     def get_neighbors(self, node_id: int):
         """Return list of (neighbor_id, weight) pairs."""
