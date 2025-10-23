@@ -13,10 +13,53 @@ class Graph:
     # assume all methods implemented
     def __init__(self) -> None:
         self.adj = {}
+
+    def get_neighbors(self, node_id: int):
+        """Return list of (neighbor_id, weight) pairs."""
+        return self.adj.get(node_id, [])
     
-    def dijkstra(self, start_node: Node) -> dict:
-        # assume method implemented
-        pass
+    def dijkstra(self, start: int, target: int):
+        """
+        Find the cheapest (minimum-weight) path from start → target using Dijkstra’s algorithm.
+        Returns: (total_cost, path_list)
+        """
+        # Min-heap priority queue: (distance_so_far, current_node)
+        pq = [(0, start)]
+        distances = {start: 0}
+        previous = {start: None}
+
+        while pq:
+            current_dist, current_node = heapq.heappop(pq)
+
+            # Early exit: reached target
+            if current_node == target:
+                break
+
+            # If this distance is outdated, skip
+            if current_dist > distances.get(current_node, float('inf')):
+                continue
+
+            for neighbor, weight in self.get_neighbors(current_node):
+                new_dist = current_dist + weight
+
+                # Found a shorter path to neighbor
+                if new_dist < distances.get(neighbor, float('inf')):
+                    distances[neighbor] = new_dist
+                    previous[neighbor] = current_node
+                    heapq.heappush(pq, (new_dist, neighbor))
+
+        # Reconstruct the path
+        if target not in previous and target != start:
+            return float('inf'), []  # no path found
+
+        path = []
+        node = target
+        while node is not None:
+            path.append(node)
+            node = previous.get(node)
+        path.reverse()
+
+        return distances.get(target, float('inf')), path
 
 class Node:
     # IMPLEMENTED BY JOJO
