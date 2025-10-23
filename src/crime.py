@@ -31,7 +31,7 @@ class Graph:
 
     def get_neighbors(self, node_id: int):
         """Return list of (neighbor_id, weight) pairs."""
-        return self.adj.get(node_id, [])
+        return self.adj_list.get(node_id, [])
     
     def dijkstra(self, start: int, target: int):
         """
@@ -117,5 +117,8 @@ class Crime(Node):
             return d1
         else:
             return min(d1, d2)
-
         
+
+
+
+
