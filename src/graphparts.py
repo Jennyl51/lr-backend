@@ -4,10 +4,11 @@
 import pandas as pd
 import numpy as np
 import heapq
-from datetime import datetime, timedelta, date, time
-from time import sleep
+from datetime import datetime
 from collections import defaultdict
 import os
+import math
+from typing import Dict, List, Tuple, Optional
 
 
 # for dummy, get the csv
@@ -113,48 +114,80 @@ class Node:
 
     # get id
     def get_id(self) -> int:
-        return id
+        return self.id
     
     def get_neighbours(self) -> list:
-        return self.g.get_neighbors(id)
+        return self.g.get_neighbors(self.id)
     
     def __str__(self) -> str:
-        return "Node {id =" + id + ", lat=" + self.lat + ", lon=" + self.lon + "}"
+        return f"Node(id={self.id}, lat={self.lat:.6f}, lon={self.lon:.6f})"
+
 
 class Crime(Node):
-    def __init__(self, lat: float, lon: float, g: Graph, dt: datetime) -> None:
-        self.lat = lat
-        self.lon = lon
-        self.wt = 0.0
-        self.crds = np.array(lat, lon)
+    """
+    Crime is a Node + attributes that produce a weight:
+      weight = average(priority_norm, magnitude_norm, recency_norm)
+    Where:
+      priority_norm  in [0,1] (e.g., priority 1..5 -> / 5)
+      magnitude_norm in [0,1] (user pref 1..5 -> / 5, or already 0..1)
+      recency_norm   in [0,1] via exponential decay or linear window
+    """
+    def __init__(
+        self,
+        lat: float,
+        lon: float,
+        g: Graph,
+        dt: datetime,
+        priority: int,
+        magnitude: float,
+        *,
+        priority_max: int = 5,
+        magnitude_max: float = 5.0,
+        recency_half_life_days: float = 7.0,
+        node_id: Optional[int] = None
+    ) -> None:
+        super().__init__(lat, lon, node_id if node_id is not None else -1, g)
         self.dt = dt
-        self.g = g
-        # add more data from DP's table
+        self.priority = int(priority)               # e.g., 1..5 (use of force)
+        self.magnitude = float(magnitude)           # user preference (1..5 or 0..1)
+        self.priority_max = int(priority_max)
+        self.magnitude_max = float(magnitude_max)
+        self.recency_half_life_days = float(recency_half_life_days)
+        self.coords = np.array([self.lat, self.lon], dtype=float)
 
-    # calculates the weight of a crime — change this later lol
-    def calc_weight(self) -> int:
-        priority = dummy_data['Priority'].str.extract(r'\w+_(\d{1})').astype('int')
-        magnitude = 1 # get user pref later
-        recency = now - timedelta(days=7) # AIM: recency = now - datetime of crime
-        return np.sum(priority, magnitude, recency) / 3
+    def calc_weight(self, now: Optional[datetime] = None) -> float:
+        # normalize each factor to [0,1]
+        priority_norm = min(max(self.priority / self.priority_max, 0.0), 1.0)
+        magnitude_norm = min(max(self.magnitude / self.magnitude_max, 0.0), 1.0)
+        recency_norm = recency_score(self.dt, now, self.recency_half_life_days)
+        return (priority_norm + magnitude_norm + recency_norm) / 3.0
 
-    def update_weight(self) -> None:
-        # while the mapping algorithm is running
-        while True:
-            weight = calc_weight(self)
-            sleep(30)
-    
-    # calculates the distance from a crime to nodes 1 and 2
-    # helper method for calc_weight
-    def calc_distance(self, n1: Node, n2: Node) -> int:
-        d1 = np.sqrt(((n1.lat - self.lat) ** 2) + (n1.lon - self.lon) ** 2)
-        d2 = np.sqrt(((n2.lat - self.lat) ** 2) + (n2.lon - self.lon) ** 2)
-        if (d1 == d2):
-            return d1
-        else:
-            return min(d1, d2)
-        
+    def calc_distance_km(self, n1: Node, n2: Node) -> float:
+        """Distance from this crime to the closer of n1 or n2 (in km)."""
+        d1 = haversine_km(self.lat, self.lon, n1.lat, n1.lon)
+        d2 = haversine_km(self.lat, self.lon, n2.lat, n2.lon)
+        return min(d1, d2)
 
+    # If you really want periodic refreshing, prefer an external scheduler.
+    # Kept here as an explicit one-shot update method.
+    def update_weight_once(self, now: Optional[datetime] = None) -> float:
+        return self.calc_weight(now)
+     
 
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance in kilometers."""
+    R = 6371.0088
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = phi2 - phi1
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dl/2)**2
+    return R * (2 * math.asin(math.sqrt(a)))
 
-
+def recency_score(dt: datetime, now: Optional[datetime] = None, half_life_days: float = 7.0) -> float:
+    """
+    Exponential decay in [0,1]. Now = 1.0, decays with half-life.
+    score = 0.5 ** (age_days / half_life_days)
+    """
+    now = now or datetime.now(datetime.timezone.utc)
+    age_days = max((now - dt).total_seconds(), 0) / 86400.0
+    return float(0.5 ** (age_days / half_life_days))
