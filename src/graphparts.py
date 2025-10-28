@@ -77,13 +77,37 @@ class Graph:
         return distances.get(target, float('inf')), path
 
 class Node:
-    # IMPLEMENTED BY JOJO
-    # assume all methods implemented
     def __init__(self, lat: float, lon: float, id: int, g: Graph) -> None:
         self.lat = lat
         self.lon = lon
         self.id = id
         self.g = g
+
+    # get lat
+    def get_lat(self) -> float:
+        return self.lat
+    
+    # set lat
+    def set_lat(self, new_lat: float) -> None:
+        self.lat = new_lat
+
+     # get lon
+    def get_lon(self) -> float:
+        return self.lon
+    
+    # set lat
+    def set_lon(self, new_lon: float) -> None:
+        self.lon = new_lon
+
+    # get id
+    def get_id(self) -> int:
+        return id
+    
+    def get_neighbours(self) -> list:
+        return self.g.get_neighbors(id)
+    
+    def __str__(self) -> str:
+        return "Node {id =" + id + ", lat=" + self.lat + ", lon=" + self.lon + "}"
 
 class Crime(Node):
     def __init__(self, lat: float, lon: float, g: Graph, dt: datetime) -> None:
