@@ -3,16 +3,28 @@
 
 import pandas as pd
 import numpy as np
+import heapq
 from datetime import datetime, timedelta, date, time
 from time import sleep
+from collections import defaultdict
+import os
 
-# dummy_data = read csv
+
+# for dummy, get the csv
+DATA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'dummy.csv')
+DATA_PATH = os.path.abspath(DATA_PATH)
+
+# true nodes/edges for after mid-sem
+if not os.path.exists("data/berkeley_adj_list.csv"):
+    from backend.csv_builder import build_csv
+    build_csv()
+
 # CSV we're assuming (source, destination, weight)
 
 class Graph:
     # IMPLEMENTED BY ARY AND ETHAN
     # assume all methods implemented
-    def __init__(self, csv_path) -> None:
+    def __init__(self, csv_path=DATA_PATH) -> None:
         self.adj_list = defaultdict(list)
 
         with open(csv_path, 'r') as f:
