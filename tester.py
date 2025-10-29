@@ -4,7 +4,7 @@ import sys
 # Ensure Python can find src/
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from crime import Graph
+from graphparts import Graph
 
 if __name__ == "__main__":
     # Build the graph using the dummy CSV
