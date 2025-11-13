@@ -48,10 +48,9 @@ class Graph:
     
     def dijkstra(self, start: int, target: int):
         """
-        Find the cheapest (minimum-weight) path from start → target using Dijkstra’s algorithm.
-        Returns: (total_cost, path_list)
+        Find the cheapest path from start → target using Dijkstra’s algorithm.
+        Returns: (total_cost, [(node, edge_weight), ..., (target, 0)])
         """
-        # Min-heap priority queue: (distance_so_far, current_node)
         pq = [(0, start)]
         distances = {start: 0}
         previous = {start: None}
@@ -59,35 +58,37 @@ class Graph:
         while pq:
             current_dist, current_node = heapq.heappop(pq)
 
-            # Early exit: reached target
             if current_node == target:
                 break
 
-            # If this distance is outdated, skip
             if current_dist > distances.get(current_node, float('inf')):
                 continue
 
             for neighbor, weight in self.get_neighbors(current_node):
                 new_dist = current_dist + weight
-
-                # Found a shorter path to neighbor
                 if new_dist < distances.get(neighbor, float('inf')):
                     distances[neighbor] = new_dist
-                    previous[neighbor] = current_node
+                    previous[neighbor] = (current_node, weight)
                     heapq.heappush(pq, (new_dist, neighbor))
 
-        # Reconstruct the path
         if target not in previous and target != start:
-            return float('inf'), []  # no path found
+            return float('inf'), []
 
-        path = []
+        # Reconstruct path with weights
+        path_with_weights = []
         node = target
         while node is not None:
-            path.append(node)
-            node = previous.get(node)
-        path.reverse()
+            prev = previous.get(node)
+            if prev is None:
+                path_with_weights.append((node, 0))  # start node
+                break
+            prev_node, edge_weight = prev
+            path_with_weights.append((node, edge_weight))
+            node = prev_node
 
-        return distances.get(target, float('inf')), path
+        path_with_weights.reverse()
+        total_cost = distances.get(target, float('inf'))
+        return total_cost, path_with_weights
 
 class Node:
     def __init__(self, lat: float, lon: float, id: int, g: Graph) -> None:
